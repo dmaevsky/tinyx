@@ -1,0 +1,30 @@
+{
+  "scripts": {
+    "test": "ava"
+  },
+  "devDependencies": {
+    "ava": "^3.3.0",
+    "svelte": "^3.18.2"
+  },
+  "name": "tinyx",
+  "description": "Tiny state manager",
+  "version": "0.0.1",
+  "main": "tx.js",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmaevsky/tinyx.git"
+  },
+  "keywords": [
+    "state",
+    "manager",
+    "js",
+    "immutable"
+  ],
+  "author": "Dmitry Maevsky",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dmaevsky/tinyx/issues"
+  },
+  "homepage": "https://github.com/dmaevsky/tinyx#readme"
+}
