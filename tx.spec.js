@@ -70,6 +70,28 @@ test('tx store ops', t => {
   unsubscribe();
 });
 
+test('a store with Sets and Maps', t => {
+  const store = tx(writable({
+    a_map: new Map(),
+    a_set: new Set()
+  }));
+
+  // Transactions
+  function TEST_SET(value) { return ({ set, update }) => set('a_map', 'key' + value, value) && update('a_set', s => new Set(s).add(value)) }
+  function TEST_DELETE(value) { return ({ remove }) => remove('a_map', 'key' + value) && remove('a_set', value) }
+
+  store.commit(TEST_SET, 1);
+  store.commit(TEST_SET, 2);
+
+  t.deepEqual([...store.get('a_map')], [['key1', 1], ['key2', 2]]);
+  t.deepEqual([...store.get('a_set')], [1, 2]);
+
+  store.commit(TEST_DELETE, 1);
+
+  t.deepEqual([...store.get('a_map')], [['key2', 2]]);
+  t.deepEqual([...store.get('a_set')], [2]);
+});
+
 test('multiple subscribers', t => {
   const store = tx(writable(new Map()));
   let test1, test2;

@@ -24,6 +24,7 @@ const deleteIn = (o, key, ...path) => {
   if (!o || typeof o !== 'object') return o;
   if (!path.length) {
     if (o instanceof Map) (o = new Map(o)).delete(key);
+    else if (o instanceof Set) (o = new Set(o)).delete(key);
     else delete (o = (o instanceof Array ? [...o] : {...o}))[key];
     return o;
   }
