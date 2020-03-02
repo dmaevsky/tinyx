@@ -88,7 +88,6 @@ function SET_VALUE(value) { return ({ set }) => set(value); }
 function UPDATE_VALUE(updater) { return ({ update }) => update(updater); }
 
 const select = ({ subscribe, get, commit }, selector) => {
-  if (typeof selector !== 'function') selector = () => selector;
   return {
     subscribe: subscriber => {
       let selected;
