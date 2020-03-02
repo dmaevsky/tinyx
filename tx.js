@@ -7,11 +7,11 @@ const getIn = (o, ...keyPath) => {
 
 const setIn = (o, ...keyPath) => {
   let value = keyPath.pop();
-  if (!keyPath.length) return value;
+  if (!keyPath.length) return Object.freeze(value);
   let [key, ...path] = keyPath;
 
-  if (o instanceof Map) return new Map(o).set(key, setIn(o.get(key), ...path, value));
-  return Object.assign(o instanceof Array ? [] : {}, o, { [key]: setIn(o && o[key], ...path, value) });
+  if (o instanceof Map) return Object.freeze(new Map(o).set(key, setIn(o.get(key), ...path, value)));
+  return Object.freeze(Object.assign(o instanceof Array ? [] : {}, o, { [key]: setIn(o && o[key], ...path, value) }));
 }
 
 const updateIn = (o, ...keyPath) => {
@@ -26,7 +26,7 @@ const deleteIn = (o, key, ...path) => {
     if (o instanceof Map) (o = new Map(o)).delete(key);
     else if (o instanceof Set) (o = new Set(o)).delete(key);
     else delete (o = (o instanceof Array ? [...o] : {...o}))[key];
-    return o;
+    return Object.freeze(o);
   }
   return setIn(o, key, deleteIn(getIn(o, key), ...path));
 }
