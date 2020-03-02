@@ -104,4 +104,4 @@ const select = ({ subscribe, get, commit }, selector) => {
   }
 }
 
-module.exports = { getIn, setIn, updateIn, deleteIn, produce, tx, select }
+module.exports = { getIn, setIn, updateIn, deleteIn, produce, tx, select, SET_VALUE, UPDATE_VALUE }
