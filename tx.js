@@ -84,8 +84,8 @@ const tx = ({ update, ...rest }, middleware = []) => {
   }
 }
 
-function SET_VALUE(value) { return ({ set }) => set(value); }
-function UPDATE_VALUE(updater) { return ({ update }) => update(updater); }
+function SET_VALUE({ value }) { return ({ set }) => set(value); }
+function UPDATE_VALUE({ updater }) { return ({ update }) => update(updater); }
 
 const select = ({ subscribe, get, commit }, selector) => {
   return {
@@ -97,8 +97,8 @@ const select = ({ subscribe, get, commit }, selector) => {
       });
     },
     get: (...keyPath) => get(...selector(get()), ...keyPath),
-    set: value => commit(...selector(get()), SET_VALUE, value),
-    update: updater => commit(...selector(get()), UPDATE_VALUE, updater),
+    set: value => commit(...selector(get()), SET_VALUE, { value }),
+    update: updater => commit(...selector(get()), UPDATE_VALUE, { updater }),
     commit: (...keyPath) => commit(...selector(get()), ...keyPath)
   }
 }

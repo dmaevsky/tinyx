@@ -145,3 +145,19 @@ test('selected stores', t => {
 
   for (let cleanup of subscriptions) cleanup();
 });
+
+test('built-in transactions for selected stores', t => {
+  const store = tx(writable({ foo: null }));
+  const foo = select(store, () => ['foo']);
+
+  let updates = [];
+  foo.subscribe(v => updates.push(v));
+
+  foo.set([1, 2, 3]);
+  t.deepEqual(store.get('foo'), [1, 2, 3]);
+
+  foo.update(a => [...a, 4]);
+  t.deepEqual(store.get('foo'), [1, 2, 3, 4]);
+
+  t.deepEqual(updates, [[1, 2, 3], [1, 2, 3, 4]]);
+});
