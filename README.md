@@ -4,7 +4,7 @@ A tiny state manager for big applications
 ## Why tinyX ?
 * [Redux](https://redux.js.org/) inspired
 * No boilerplate
-* Zero dependencies, 1k gzipped, ~100 SLOC
+* Zero dependencies, 1k gzipped, ~120 SLOC
 * Expressive syntax for describing transactions, [ImmerJS](https://immerjs.github.io/immer/docs/introduction) inspired, but using plain JS objects.
 * Automatic individual patches recording, again [ImmerJS](https://immerjs.github.io/immer/docs/introduction) inspired, and without Proxy voodoo magic :)
 * Middleware: logging, time travel, etc. out of the box

@@ -161,3 +161,10 @@ test('built-in transactions for selected stores', t => {
 
   t.deepEqual(updates, [[1, 2, 3], [1, 2, 3, 4]]);
 });
+
+test('enforced immutability of the state', t => {
+  const store = tx(writable({ foo: new Map([['a', 1]]) }));
+  const foo = select(store, () => ['foo']);
+
+  t.throws(() => foo.update(map => map.set('a', 2)), { instanceOf: TypeError }, 'Object is frozen');
+});

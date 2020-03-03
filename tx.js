@@ -1,3 +1,15 @@
+const frozen = () => { throw new TypeError('Object is frozen'); }
+
+const deepFreeze = o => {
+  if (Object.isFrozen(o)) return o;
+  if (o instanceof Map || o instanceof Set) {
+    [...o].forEach(deepFreeze);
+    for (let method of ['add', 'set', 'clear', 'delete']) o[method] = frozen;
+  }
+  else if (o && typeof o === 'object') Object.keys(o).forEach(key => deepFreeze(o[key]));
+  return Object.freeze(o);
+}
+
 const getIn = (o, ...keyPath) => {
   if (!o) return undefined;
   if (!keyPath.length) return o;
@@ -7,11 +19,11 @@ const getIn = (o, ...keyPath) => {
 
 const setIn = (o, ...keyPath) => {
   let value = keyPath.pop();
-  if (!keyPath.length) return Object.freeze(value);
+  if (!keyPath.length) return deepFreeze(value);
   let [key, ...path] = keyPath;
 
-  if (o instanceof Map) return Object.freeze(new Map(o).set(key, setIn(o.get(key), ...path, value)));
-  return Object.freeze(Object.assign(o instanceof Array ? [] : {}, o, { [key]: setIn(o && o[key], ...path, value) }));
+  if (o instanceof Map) return deepFreeze(new Map(o).set(key, setIn(o.get(key), ...path, value)));
+  return deepFreeze(Object.assign(o instanceof Array ? [] : {}, o, { [key]: setIn(o && o[key], ...path, value) }));
 }
 
 const updateIn = (o, ...keyPath) => {
@@ -26,7 +38,7 @@ const deleteIn = (o, key, ...path) => {
     if (o instanceof Map) (o = new Map(o)).delete(key);
     else if (o instanceof Set) (o = new Set(o)).delete(key);
     else delete (o = (o instanceof Array ? [...o] : {...o}))[key];
-    return Object.freeze(o);
+    return deepFreeze(o);
   }
   return setIn(o, key, deleteIn(getIn(o, key), ...path));
 }
@@ -65,6 +77,8 @@ const produce = (mutation, record) => state => {
 }
 
 const tx = ({ update, ...rest }, middleware = []) => {
+  update(state => deepFreeze(state));
+
   let commit = (keyPath, transaction, payload) => {
     let changes = [];
     update(s => updateIn(s, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
@@ -103,4 +117,4 @@ const select = ({ subscribe, get, commit }, selector) => {
   }
 }
 
-module.exports = { getIn, setIn, updateIn, deleteIn, produce, tx, select, SET_VALUE, UPDATE_VALUE }
+module.exports = { deepFreeze, getIn, setIn, updateIn, deleteIn, produce, tx, select, SET_VALUE, UPDATE_VALUE }
