@@ -8,7 +8,7 @@
   },
   "name": "tinyx",
   "description": "Tiny state manager",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "main": "tx.js",
   "dependencies": {},
   "repository": {

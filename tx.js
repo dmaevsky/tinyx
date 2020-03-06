@@ -3,11 +3,11 @@ const frozen = () => { throw new TypeError('Object is frozen'); }
 const deepFreeze = o => {
   if (Object.isFrozen(o)) return o;
   if (o instanceof Map || o instanceof Set) {
-    [...o].forEach(deepFreeze);
     for (let method of ['add', 'set', 'clear', 'delete']) o[method] = frozen;
+    [...Object.freeze(o)].forEach(deepFreeze);
   }
-  else if (o && typeof o === 'object') Object.keys(o).forEach(key => deepFreeze(o[key]));
-  return Object.freeze(o);
+  else if (o && typeof o === 'object') Object.keys(Object.freeze(o)).forEach(key => deepFreeze(o[key]));
+  return o;
 }
 
 const getIn = (o, ...keyPath) => {
