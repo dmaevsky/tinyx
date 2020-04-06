@@ -1,7 +1,15 @@
 const test = require('ava');
 
-const { produce, tx, select } = require('./tx')
-const { writable } = require('svelte/store')
+const { getIn, produce, tx, select } = require('./tx');
+const { writable } = require('svelte/store');
+
+test('getIn', t => {
+  t.is(getIn({ a: 5 }, 'a'), 5);
+  t.is(getIn('', 'length'), 0);
+  t.is(getIn(null, 'foo'), undefined);
+  t.is(getIn(undefined, 'foo'), undefined);
+  t.is(getIn({a: 5}, 'a', 'b'), undefined);
+});
 
 test('produce', t => {
   let state = {}
@@ -159,7 +167,7 @@ test('built-in transactions for selected stores', t => {
   foo.update(a => [...a, 4]);
   t.deepEqual(store.get('foo'), [1, 2, 3, 4]);
 
-  t.deepEqual(updates, [[1, 2, 3], [1, 2, 3, 4]]);
+  t.deepEqual(updates, [null, [1, 2, 3], [1, 2, 3, 4]]);
 });
 
 test('enforced immutability of the state', t => {

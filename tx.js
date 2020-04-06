@@ -11,8 +11,8 @@ const deepFreeze = o => {
 }
 
 const getIn = (o, ...keyPath) => {
-  if (!o) return undefined;
   if (!keyPath.length) return o;
+  if (o === null || o === undefined) return undefined;
   let [key, ...path] = keyPath;
   return getIn(o instanceof Map ? o.get(key) : o[key], ...path);
 }
