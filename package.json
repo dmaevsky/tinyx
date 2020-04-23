@@ -20,11 +20,6 @@
   "version": "0.2.0",
   "main": "tx.js",
   "module": "tx.js",
-  "exports": {
-    ".": "./tx.js",
-    "./middleware/": "./middleware/",
-    "./plugins/": "./plugins/"
-  },
   "dependencies": {},
   "repository": {
     "type": "git",
