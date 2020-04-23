@@ -1,23 +1,25 @@
 const frozen = () => { throw new TypeError('Object is frozen'); }
 
-const deepFreeze = o => {
-  if (Object.isFrozen(o)) return o;
+export const deepFreeze = o => {
+  if (typeof o !== 'object' || !o || Object.isFrozen(o)) return o;
+  if (![Object, Map, Set].some(C => C.prototype === Object.getPrototypeOf(o))) return o;
+
   if (o instanceof Map || o instanceof Set) {
-    for (let method of ['add', 'set', 'clear', 'delete']) o[method] = frozen;
+    for (let method of ['add', 'set', 'clear', 'delete']) Object.defineProperty(o, method, { value: frozen });
     [...Object.freeze(o)].forEach(deepFreeze);
   }
-  else if (o && typeof o === 'object') Object.keys(Object.freeze(o)).forEach(key => deepFreeze(o[key]));
+  else Object.keys(Object.freeze(o)).forEach(key => deepFreeze(o[key]));
   return o;
 }
 
-const getIn = (o, ...keyPath) => {
+export const getIn = (o, ...keyPath) => {
   if (!keyPath.length) return o;
   if (o === null || o === undefined) return undefined;
   let [key, ...path] = keyPath;
   return getIn(o instanceof Map ? o.get(key) : o[key], ...path);
 }
 
-const setIn = (o, ...keyPath) => {
+export const setIn = (o, ...keyPath) => {
   let value = keyPath.pop();
   if (!keyPath.length) return deepFreeze(value);
   let [key, ...path] = keyPath;
@@ -26,13 +28,13 @@ const setIn = (o, ...keyPath) => {
   return deepFreeze(Object.assign(o instanceof Array ? [] : {}, o, { [key]: setIn(o && o[key], ...path, value) }));
 }
 
-const updateIn = (o, ...keyPath) => {
+export const updateIn = (o, ...keyPath) => {
   let updater = keyPath.pop();
   let oldValue = getIn(o, ...keyPath), newValue = updater(oldValue);
   return oldValue === newValue ? o : setIn(o, ...keyPath, newValue);
 }
 
-const deleteIn = (o, key, ...path) => {
+export const deleteIn = (o, key, ...path) => {
   if (!o || typeof o !== 'object') return o;
   if (!path.length) {
     if (o instanceof Map) (o = new Map(o)).delete(key);
@@ -45,7 +47,7 @@ const deleteIn = (o, key, ...path) => {
 
 const prepend = (push, prefixPath) => push && (({ path, ...rest }) => push({ path: [...prefixPath, ...path], ...rest }));
 
-const produce = (mutation, record) => state => {
+export const produce = (mutation, record) => state => {
   const ops = {
     get: (...path) => getIn(state, ...path),
     set: (...path) => {
@@ -76,7 +78,7 @@ const produce = (mutation, record) => state => {
   return state;
 }
 
-const tx = ({ update, ...rest }, middleware = []) => {
+export const tx = ({ update, ...rest }, middleware = []) => {
   update(state => deepFreeze(state));
 
   let commit = (keyPath, transaction, payload) => {
@@ -98,10 +100,10 @@ const tx = ({ update, ...rest }, middleware = []) => {
   }
 }
 
-function SET_VALUE({ value }) { return ({ set }) => set(value); }
-function UPDATE_VALUE({ updater }) { return ({ update }) => update(updater); }
+export function SET_VALUE({ value }) { return ({ set }) => set(value); }
+export function UPDATE_VALUE({ updater }) { return ({ update }) => update(updater); }
 
-const select = ({ subscribe, get, commit }, selector) => {
+export const select = ({ subscribe, get, commit }, selector) => {
   return {
     subscribe: subscriber => {
       let selected;
@@ -116,5 +118,3 @@ const select = ({ subscribe, get, commit }, selector) => {
     commit: (...keyPath) => commit(...selector(get()), ...keyPath)
   }
 }
-
-module.exports = { deepFreeze, getIn, setIn, updateIn, deleteIn, produce, tx, select, SET_VALUE, UPDATE_VALUE }

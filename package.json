@@ -1,15 +1,30 @@
 {
   "scripts": {
-    "test": "ava"
+    "test": "ava -v"
   },
   "devDependencies": {
-    "ava": "^3.3.0",
-    "svelte": "^3.18.2"
+    "ava": "^3.7.1",
+    "esm": "^3.2.25",
+    "svelte": "^3.20.1"
+  },
+  "ava": {
+    "files": [
+      "**/*.spec.js"
+    ],
+    "require": [
+      "esm"
+    ]
   },
   "name": "tinyx",
   "description": "Tiny state manager",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "main": "tx.js",
+  "module": "tx.js",
+  "exports": {
+    ".": "./tx.js",
+    "./middleware/": "./middleware/",
+    "./plugins/": "./plugins/"
+  },
   "dependencies": {},
   "repository": {
     "type": "git",

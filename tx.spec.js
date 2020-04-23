@@ -1,7 +1,7 @@
-const test = require('ava');
+import test from 'ava';
 
-const { getIn, produce, tx, select } = require('./tx');
-const { writable } = require('svelte/store');
+import { getIn, produce, tx, select } from '.';
+import { writable } from 'svelte/store';
 
 test('getIn', t => {
   t.is(getIn({ a: 5 }, 'a'), 5);
@@ -175,4 +175,15 @@ test('enforced immutability of the state', t => {
   const foo = select(store, () => ['foo']);
 
   t.throws(() => foo.update(map => map.set('a', 2)), { instanceOf: TypeError }, 'Object is frozen');
+});
+
+test('objects which are not Object, Map, or Set are not frozen', t => {
+  class C {
+    set(value) { this.value = value;  return this; }
+  };
+  const store = tx(writable({ foo: new C() }));
+  const foo = select(store, () => ['foo']);
+
+  foo.update(c => c.set(42));
+  t.is(store.get('foo', 'value'), 42);
 });
