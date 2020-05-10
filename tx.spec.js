@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { getIn, produce, tx, select } from '.';
+import { getIn, produce, tx, select, derived, SET_VALUE } from '.';
 import { writable } from 'svelte/store';
 
 test('getIn', t => {
@@ -186,4 +186,22 @@ test('objects which are not Object, Map, or Set are not frozen', t => {
 
   foo.update(c => c.set(42));
   t.is(store.get('foo', 'value'), 42);
+});
+
+test('derived', t => {
+  const store = tx(writable({ activeIdx: 1, docs: ['foo', 'bar', 'baz'] }));
+  const active = derived(store, ({ activeIdx, docs }) => docs[activeIdx], (a, b) => a && b && a.toUpperCase() === b.toUpperCase());
+
+  const updates = [];
+  active.subscribe(value => updates.push(value));
+
+  t.is(active.get(), 'bar');
+
+  store.commit('docs', 1, SET_VALUE, { value: 'BAR' });
+  t.is(active.get(), 'BAR');
+
+  store.commit('activeIdx', SET_VALUE, { value: 2 });
+  t.is(active.get(), 'baz');
+
+  t.deepEqual(updates, ['bar', 'baz']);
 });

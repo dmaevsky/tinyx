@@ -73,31 +73,33 @@ export const produce = (mutation, record) => state => {
       let innerMutation = path.pop();
       return state = updateIn(state, ...path, produce(innerMutation, prepend(record, path)));
     }
-  }
+  };
   if (mutation) mutation(ops);
   return state;
 }
 
-export const tx = ({ update, ...rest }, middleware = []) => {
+export const tx = ({ update, subscribe, ...rest }, middleware = []) => {
   update(state => deepFreeze(state));
+  let state;
+  subscribe(s => state = s);
 
   let commit = (keyPath, transaction, payload) => {
     let changes = [];
     update(s => updateIn(s, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
     return changes;
-  }
+  };
 
   for (let mw of middleware.slice().reverse()) commit = mw(commit);
 
   return {
-    update, ...rest,
-    get: (...keyPath) => { let state;  update(s => state = s);  return getIn(state, ...keyPath); },
+    update, subscribe, ...rest,
+    get: (...keyPath) => getIn(state, ...keyPath),
     commit: (...keyPath) => {
       let payload, transaction = keyPath.pop();
       if (typeof transaction !== 'function') [payload, transaction] = [transaction, keyPath.pop()];
       return commit(keyPath, transaction, payload);
     }
-  }
+  };
 }
 
 export function SET_VALUE({ value }) { return ({ set }) => set(value); }
@@ -116,5 +118,18 @@ export const select = ({ subscribe, get, commit }, selector) => {
     set: value => commit(...selector(get()), SET_VALUE, { value }),
     update: updater => commit(...selector(get()), UPDATE_VALUE, { updater }),
     commit: (...keyPath) => commit(...selector(get()), ...keyPath)
-  }
+  };
+}
+
+export const derived = ({ subscribe, get }, selector, equals = (a, b) => a === b) => {
+  return {
+    subscribe: subscriber => {
+      let selected;
+      return subscribe(state => {
+        const nowSelected = selector(state);
+        if (!equals(nowSelected, selected)) subscriber(selected = nowSelected);
+      });
+    },
+    get: (...keyPath) => getIn(selector(get()), ...keyPath)
+  };
 }

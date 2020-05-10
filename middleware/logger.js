@@ -1,13 +1,13 @@
 const txLogger = next => {
-  if (process.env.NODE_ENV !== 'development') return next;
-
   return (keyPath, transaction, payload) => {
+    const changes = next(keyPath, transaction, payload);
+
     let msg = keyPath.length ? keyPath.join('.') + ' [' : '[';
     msg += transaction.name + ']';
-    if (transaction.length) console.log(msg + ':', payload);
-    else console.log(msg);
+    if (transaction.length) console.log(msg + ':', payload, changes);
+    else console.log(msg, changes);
 
-    return next(keyPath, transaction, payload);
+    return changes;
   };
 }
 

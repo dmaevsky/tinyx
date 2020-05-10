@@ -17,7 +17,7 @@
   },
   "name": "tinyx",
   "description": "Tiny state manager",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "main": "tx.js",
   "module": "tx.js",
   "dependencies": {},
