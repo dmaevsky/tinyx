@@ -3,9 +3,9 @@
     "test": "ava -v"
   },
   "devDependencies": {
-    "ava": "^3.8.2",
+    "ava": "^3.10.1",
     "esm": "^3.2.25",
-    "svelte": "^3.22.2"
+    "svelte": "^3.24.0"
   },
   "ava": {
     "files": [
