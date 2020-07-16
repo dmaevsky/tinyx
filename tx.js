@@ -78,32 +78,21 @@ export const produce = (mutation, record) => state => {
   return state;
 }
 
-export const tx = ({ update, subscribe, ...rest }, middleware = []) => {
+export const tx = ({ update, subscribe }) => {
   update(state => deepFreeze(state));
   let state;
   subscribe(s => state = s);
 
-  let commit = (keyPath, transaction, payload) => {
-    let changes = [];
-    update(s => updateIn(s, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
-    return changes;
-  };
-
-  for (let mw of middleware.slice().reverse()) commit = mw(commit);
-
   return {
-    update, subscribe, ...rest,
+    subscribe,
     get: (...keyPath) => getIn(state, ...keyPath),
-    commit: (...keyPath) => {
-      let payload, transaction = keyPath.pop();
-      if (typeof transaction !== 'function') [payload, transaction] = [transaction, keyPath.pop()];
-      return commit(keyPath, transaction, payload);
+    commit: (transaction, payload, ...keyPath) => {
+      let changes = [];
+      update(s => updateIn(s, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
+      return changes;
     }
   };
 }
-
-export function SET_VALUE({ value }) { return ({ set }) => set(value); }
-export function UPDATE_VALUE({ updater }) { return ({ update }) => update(updater); }
 
 export const select = ({ subscribe, get, commit }, selector) => {
   return {
@@ -115,9 +104,7 @@ export const select = ({ subscribe, get, commit }, selector) => {
       });
     },
     get: (...keyPath) => get(...selector(get()), ...keyPath),
-    set: value => commit(...selector(get()), SET_VALUE, { value }),
-    update: updater => commit(...selector(get()), UPDATE_VALUE, { updater }),
-    commit: (...keyPath) => commit(...selector(get()), ...keyPath)
+    commit: (transaction, payload, ...keyPath) => commit(transaction, payload, ...selector(get()), ...keyPath)
   };
 }
 

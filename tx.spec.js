@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { getIn, produce, tx, select, derived, SET_VALUE } from '.';
+import { getIn, produce, tx, select, derived } from '.';
 import { writable } from 'svelte/store';
 
 test('getIn', t => {
@@ -148,26 +148,10 @@ test('selected stores', t => {
   t.is($active, 'BARVAL');
   t.deepEqual($store, {active: 'bar', foo: 'fooVal', bar: 'BARVAL'});
 
-  store.commit('foo', TO_UPPERCASE);
+  store.commit(TO_UPPERCASE, null, 'foo');
   t.deepEqual($store, {active: 'bar', foo: 'FOOVAL', bar: 'BARVAL'});
 
   for (let cleanup of subscriptions) cleanup();
-});
-
-test('built-in transactions for selected stores', t => {
-  const store = tx(writable({ foo: null }));
-  const foo = select(store, () => ['foo']);
-
-  let updates = [];
-  foo.subscribe(v => updates.push(v));
-
-  foo.set([1, 2, 3]);
-  t.deepEqual(store.get('foo'), [1, 2, 3]);
-
-  foo.update(a => [...a, 4]);
-  t.deepEqual(store.get('foo'), [1, 2, 3, 4]);
-
-  t.deepEqual(updates, [null, [1, 2, 3], [1, 2, 3, 4]]);
 });
 
 test('enforced immutability of the state', t => {
@@ -184,7 +168,11 @@ test('objects which are not Object, Map, or Set are not frozen', t => {
   const store = tx(writable({ foo: new C() }));
   const foo = select(store, () => ['foo']);
 
-  foo.update(c => c.set(42));
+  function MUTATE_C() {
+    return ({ update }) => update(c => c.set(42));
+  }
+
+  foo.commit(MUTATE_C);
   t.is(store.get('foo', 'value'), 42);
 });
 
@@ -192,15 +180,19 @@ test('derived', t => {
   const store = tx(writable({ activeIdx: 1, docs: ['foo', 'bar', 'baz'] }));
   const active = derived(store, ({ activeIdx, docs }) => docs[activeIdx], (a, b) => a && b && a.toUpperCase() === b.toUpperCase());
 
+  function SET_VALUE(value) {
+    return ({ set }) => set(value);
+  }
+
   const updates = [];
   active.subscribe(value => updates.push(value));
 
   t.is(active.get(), 'bar');
 
-  store.commit('docs', 1, SET_VALUE, { value: 'BAR' });
+  store.commit(SET_VALUE, 'BAR', 'docs', 1);
   t.is(active.get(), 'BAR');
 
-  store.commit('activeIdx', SET_VALUE, { value: 2 });
+  store.commit(SET_VALUE, 2, 'activeIdx');
   t.is(active.get(), 'baz');
 
   t.deepEqual(updates, ['bar', 'baz']);
