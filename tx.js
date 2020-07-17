@@ -104,7 +104,11 @@ export const select = ({ subscribe, get, commit }, selector) => {
       });
     },
     get: (...keyPath) => get(...selector(get()), ...keyPath),
-    commit: (transaction, payload, ...keyPath) => commit(transaction, payload, ...selector(get()), ...keyPath)
+    commit: (transaction, payload, ...keyPath) => {
+      const root = selector(get());
+      return commit(transaction, payload, ...root, ...keyPath)
+        .map(({ path, ...rest }) => ({ path: path.slice(root.length), ...rest }));
+    }
   };
 }
 
