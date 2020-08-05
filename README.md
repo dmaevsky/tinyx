@@ -86,21 +86,22 @@ This could serve as a reference to everything that can happen to your applicatio
 It is also a good practice to declare transactions with the `function` keyword, so that middleware (e.g. a logger) could have access to the function name.
 
 ## Middleware
-`tx` takes a second argument, which is a list of middleware: functions with a classical middleware signature
+With *tinyX* there is no *middleware* in the classical sense: you don't need a special semantic concept for this. The store is a simple contract with only three methods in the interface: `Store = { subscribe, get, commit }`, so if you want your transactions to travel through extra layers of processing (i.e. logging) you simply implement a transformer, e.g. `logger = (store: Store) -> Store` and commit your transactions into transformed store.
 ```js
-next => (keyPath, transaction, payload) => changes
+import { tx } from 'tinyx';
+import logger from 'tinyx/middleware/logger';
+
+const store = logger(tx(writable(initialState)));
+store.commit(ADD_TODO, task);   // will get logged to console
 ```
-a function taking the inner layer `.commit` function (`next`) as an argument and returning a new `.commit`, wrapped with the middleware functionality. It is important to return the array of changes from the middleware, so that it could be propagated to the outer layer. Example:
+You can `import applyMiddleware from 'tinyx/middleware'` to add syntactic sugar for this:
 ```js
-const miniLogger = next => (keyPath, transaction, payload) => (console.log(transaction.name)), next(keyPath, transaction, payload))
+const store = applyMiddleware(tx(writable(initialState)), [...middleware]);
 ```
-
-tinyX applies the middleware in the order it is specified.
-
-**Note** that each middleware can analyse the transaction name and the payload before applying the inner `next` layer (possibly skipping it altogether), as well read and possibly modify the changes returned by it, before returning them to the outer layer. Check out a logger and a generic undo/redo examples in the `middleware` folder.
+**Note** Check out a logger and a generic undo/redo examples in the `middleware` folder.
 
 ## Actions
-Unlike Redux or VueX, tinyX is totally non-opinionated in the way it treats actions (be it user-initiated actions or asynchronous events). A global store can be imported anywhere in your application, and the actions become just plain Javascript functions, totally decoupled from any components.
+Unlike Redux or VueX, tinyX is totally non-opinionated in the way it treats actions (whether user-initiated actions or asynchronous events). They become just plain Javascript functions, totally decoupled from any components. An action would usually take the store it operates on as its first argument, though it is not a strict requirement.
 
 For instance, the `undo_redo` middleware exports two such generic actions, namely, `undo` and `redo`, as well as a generic wrapper `undoable`, which, applied to any action, makes it, well, undoable :)
 Example:
@@ -108,19 +109,19 @@ Example:
 ```js
 import { writable } from 'svelte/store';
 import { tx } from 'tinyx';
-import { undo, redo, undoable, enableUndoRedo } from 'tinyx/middleware/undo_redo'
-import logger from 'tinyx/middleware/logger'
+import applyMiddleware from 'tinyx/middleware';
+import { undo, redo, undoable, enableUndoRedo } from 'tinyx/middleware/undo_redo';
+import logger from 'tinyx/middleware/logger';
 
-const store = tx(writable({ todos: [] }), [enableUndoRedo, logger]);
+const store = applyMiddleware(tx(writable({ todos: [] })), [enableUndoRedo, logger]);
 
 // Export a new action
-export const addTodo = undoable(store, task => store.commit(ADD_TODO, task));
+export const addTodo = undoable((store, task) => store.commit(ADD_TODO, task));
 
-addTodo('Run 10 miles in the morning !');
+addTodo(store, 'Run 10 miles in the morning !');
 undo(store);
 redo(store);
 ```
-**Note**: The `store` argument to `undoable`, `undo` and `redo` specifies which sub-store (see next section) to use to store the history.
 
 ## Sub-trees
 tinyX exports a helper `select = (store, selector) => subStore`, where `selector = state => keyPath`, e.g.
@@ -136,6 +137,8 @@ const activeDocument = select(store, ({ activeDocumentId }) => ['documents', act
 ```
 
 `activeDocument` will have the same API as the root store, you can commit transactions to it, and they will travel through all the middleware attached to the root store.
+
+You can also wrap selected sub-stores in extra *middleware*, so that only transactions committed directly into it would go through the extra layer. This functional approach gives incredible flexibility to mix and match middleware and sub-trees. In a sense, `select` itself may be called a *middleware*: it is just a store transformer preserving the `Store` contract.
 
 Svelte developers would enjoy the same `$activeDocument` syntactic sugar: reading from it creates an auto-subscription that only notifies subscribers if the corresponding sub-tree is affected, and writing to it commits a pre-defined SET_VALUE transaction that will travel through all the middleware, attached to the root store (e.g. get logged, become undoable etc.)
 
