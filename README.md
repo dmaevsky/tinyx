@@ -75,7 +75,7 @@ function ADD_TODO(task) {
 
 Transactions may be *committed* to the tinyX store at an arbitrary location, always resulting in a synchronous atomic update of the whole tree:
 ```js
-  store.commit(...keyPath, ADD_TODO, 'Start using tinyX');
+  store.commit(ADD_TODO, 'Start using tinyX', ...keyPath);
 ```
 `store.commit` returns an array of individual changes in the format `[{ keyPath, oldValue, newValue }]`
 
