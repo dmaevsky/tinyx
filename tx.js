@@ -2,7 +2,7 @@ const frozen = () => { throw new TypeError('Object is frozen'); }
 
 export const deepFreeze = o => {
   if (typeof o !== 'object' || !o || Object.isFrozen(o)) return o;
-  if (![Object, Map, Set].some(C => C.prototype === Object.getPrototypeOf(o))) return o;
+  if (![Object, Array, Map, Set].some(C => C.prototype === Object.getPrototypeOf(o))) return o;
 
   if (o instanceof Map || o instanceof Set) {
     for (let method of ['add', 'set', 'clear', 'delete']) Object.defineProperty(o, method, { value: frozen });
