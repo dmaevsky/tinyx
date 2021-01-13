@@ -21,6 +21,28 @@ Redux tightly couples concepts of actions and reducers (mutations). Mutations ma
 
 tinyX attempts to have the best of both worlds without over-engineering things
 
+## Example
+```js
+import { writable } from 'svelte/store';
+import { tx } from 'tinyx';
+import logger from 'tinyx/middleware/logger';
+
+const store =
+  logger(
+  tx(
+  writable({ todos: [] })
+));
+
+// Transaction
+function ADD_TODO(task) {
+  return ({ update }) => update('todos', todos => [...todos, { task }])
+}
+
+store.commit(ADD_TODO, 'Start using tinyX');
+// prints
+// [ADD_TODO]: Start using tinyX [ { path: [ 'todos' ], oldValue: [], newValue: [ [Object] ] } ]
+```
+
 ## Design concepts
 tinyX builds upon the concept of a store as a simple contract, as it is popularized in SvelteJS, but it does not have any direct dependencies on Svelte.
 
@@ -50,7 +72,11 @@ You can put anything into your store: functions, promises, whatever you please, 
 ## Terminology
 * A *mutation* is a function applying elementary operations to a *temporary* sub-state, e.g.
 ```js
-  ({set, update}) => set('important', true) && update('value' => value.toUpperCase()) && set('style', 'color', 'red')
+  ({ set, update }) => {
+    set('important', true);
+    update('text', value => value.toUpperCase());
+    set('style', 'color', 'red');
+  }
 ```
 A mutation can use 5 elementary operations, each following a `keyPath` from the root of the state tree across plain objects, arrays and ES6 maps
 - `get(...keyPath)` : returns a value at `keyPath`

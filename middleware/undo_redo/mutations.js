@@ -3,7 +3,7 @@ export function UNDOABLE_ACTION_START() {
 }
 
 export function UNDOABLE_ACTION_END(changes) {
-  return ({ update }) => update('history', history => [changes, ...history]);
+  return ({ update }) => update('history', history => [changes].concat(history || []));
 }
 
 export function UNDO() {
@@ -16,7 +16,7 @@ export function UNDO() {
       else set(...path, oldValue);
     }
 
-    update('future', future => [changes, ...future]);
+    update('future', future => [changes].concat(future || []));
     update('history', history => history.slice(1));
   }
 }
@@ -31,7 +31,7 @@ export function REDO() {
       else set(...path, newValue);
     }
 
-    update('history', history => [changes, ...history]);
+    update('history', history => [changes].concat(history || []));
     update('future', future => future.slice(1));
   }
 }
