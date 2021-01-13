@@ -100,6 +100,10 @@ const store = applyMiddleware(tx(writable(initialState)), [...middleware]);
 ```
 **Note** Check out a logger and a generic undo/redo examples in the `middleware` folder.
 
+### Using as a Svelte store
+Out of the box `tinyx` is compliant to the Svelte `Readable` store contract, and thus can be directly referenced as `$store` in Svelte components.
+You can also augment it with Svelte `Writable` contract traits `set` and `update` using `tinyx/middleware/writable-traits` which work by committing predefined mutations `SET(value)` and `UPDATE(updater)` using the store's `commit` function.
+
 ## Actions
 Unlike Redux or VueX, tinyX is totally non-opinionated in the way it treats actions (whether user-initiated actions or asynchronous events). They become just plain Javascript functions, totally decoupled from any components. An action would usually take the store it operates on as its first argument, though it is not a strict requirement.
 
@@ -123,8 +127,10 @@ undo(store);
 redo(store);
 ```
 
-## Sub-trees
-tinyX exports a helper `select = (store, selector) => subStore`, where `selector = state => keyPath`, e.g.
+## Sub-trees and derived stores
+tinyX exports a couple of helpers `select` and `derived` sharing a similar signature `(store, selector) => subStore`.
+
+For `select` `selector = state => keyPath`, e.g.
 ```js
 import { tx, select } from 'tinyx';
 
@@ -140,9 +146,23 @@ const activeDocument = select(store, ({ activeDocumentId }) => ['documents', act
 
 You can also wrap selected sub-stores in extra *middleware*, so that only transactions committed directly into it would go through the extra layer. This functional approach gives incredible flexibility to mix and match middleware and sub-trees. In a sense, `select` itself may be called a *middleware*: it is just a store transformer preserving the `Store` contract.
 
-Svelte developers would enjoy the same `$activeDocument` syntactic sugar: reading from it creates an auto-subscription that only notifies subscribers if the corresponding sub-tree is affected, and writing to it commits a pre-defined SET_VALUE transaction that will travel through all the middleware, attached to the root store (e.g. get logged, become undoable etc.)
+For `derived` `selector = state => derivedState`, e.g.
+```js
+import { tx, derived } from 'tinyx';
 
-With tinyX you can now easily (and there is no reason you should not !!!) turn on the `immutable: true` Svelte compiler option and enjoy improved performance and strictly predictable re-renders.
+const store = tx(writable({
+  documents: new Map(),
+  activeDocumentId: null
+}));
+
+const activeDocument = derived(store, ({ documents, activeDocumentId }) => documents.get(activeDocumentId));
+```
+
+You cannot commit transactions to derived stores (they are `Readable` only), but the `selector` does not have to represent a sub-tree: it can be any derived state.
+
+Svelte developers would enjoy the same `$activeDocument` syntactic sugar: reading from it creates an auto-subscription that only notifies subscribers if the corresponding state is affected.
+
+With tinyX you can now easily (and you should !!!) turn on the `immutable: true` Svelte compiler option and enjoy improved performance and strictly predictable re-renders.
 
 ## Plugins
 There is a VueJS plugin in the `plugins` folder, that injects the tinyX store into all Vue components created and hooks its `.subscribe` method to the Vue reactivity system, so the components can react to transactions committed to the store.

@@ -3,9 +3,9 @@
     "test": "ava -v"
   },
   "devDependencies": {
-    "ava": "^3.10.1",
+    "ava": "^3.15.0",
     "esm": "^3.2.25",
-    "svelte": "^3.24.0"
+    "svelte": "^3.31.2"
   },
   "ava": {
     "files": [
@@ -17,7 +17,7 @@
   },
   "name": "tinyx",
   "description": "Tiny state manager",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "main": "tx.js",
   "module": "tx.js",
   "dependencies": {},
