@@ -103,7 +103,7 @@ Transactions may be *committed* to the tinyX store at an arbitrary location, alw
 ```js
   store.commit(ADD_TODO, 'Start using tinyX', ...keyPath);
 ```
-`store.commit` returns an array of individual changes in the format `[{ keyPath, oldValue, newValue }]`
+`store.commit` returns an array of individual changes in the format `[{ path, oldValue, newValue }]`
 
 Note how the transactions are described in a concise semantic fashion with zero dependencies.
 
