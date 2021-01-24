@@ -20,6 +20,7 @@
   "version": "1.1.1",
   "main": "tx.js",
   "module": "tx.js",
+  "types": "tx.d.ts",
   "dependencies": {},
   "repository": {
     "type": "git",
