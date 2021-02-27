@@ -1,50 +1,101 @@
-declare type Operations = {
-  get: (...keyPath: string[]) => object;
-  set: (...keyPath: string[]) => object;
-  update: (...keyPath: string[]) => object;
-  remove: (...keyPath: string[]) => object;
-  apply: (...keyPath: string[]) => object;
-  subscribe(state: object): void;
-  commit(transaction: Function, payload: unknown, ...keyPath: string[]): unknown[];
+type Subscriber<T> = (value: T) => void;
+type Unsubscriber = () => void;
+type Updater<T> = (value: T) => T;
+
+interface Readable<T> {
+	subscribe(subscriber: Subscriber<T>): Unsubscriber;
 }
 
+interface ReadableWithGet<T> extends Readable<T> {
+  get(...keyPath: KeyPath): unknown;
+}
+
+interface Writable<T> extends Readable<T> {
+	set(value: T): void;
+	update(updater: Updater<T>): void;
+}
+
+type KeyPath = unknown[];
+type KeyPathNonEmpty = [NonNullable<unknown>, ...KeyPath];
+
+type KeyPathAndValue = [...KeyPath, unknown];
+type KeyPathAndUpdater = [...KeyPath, Updater<unknown>];
+type KeyPathAndMutation = [...KeyPath, Mutation];
+
+type Mutation = (ops: Partial<MutationToolbox>) => void;
+
+interface MutationToolbox {
+  get: (...keyPath: KeyPath) => unknown;
+  set: (...keyPath: KeyPathAndValue) => void;
+  update: (...keyPath: KeyPathAndUpdater) => void;
+  remove: (...keyPath: KeyPath) => void;
+  apply: (...keyPath: KeyPathAndMutation) => void;
+}
+
+type Reducer<T> = (state: T) => T;
+
+type Diff<T> = {
+  keyPath: KeyPath;
+  oldValue: T | undefined;
+  newValue: T | undefined;
+}
+
+type Recorder = (diff: Diff<any>) => void;
+type Changes = Diff<any>[];
+
+type Transaction = (payload: unknown) => Mutation;
+
+interface Tinyx<T> extends ReadableWithGet<T> {
+  commit(transaction: Transaction, payload: unknown, ...keyPath: KeyPath): Changes;
+}
+
+type Middleware<T, U = T> = (store: Tinyx<T>) => Tinyx<U>;
+
+type Action<T> = (store: Tinyx<T>, ...args: unknown[]) => unknown;
+
 declare module 'tinyx' {
-  export function deepFreeze<T extends object, U extends T>(obj: T): U;
+  export function deepFreeze<T>(obj: T): Readonly<T>;
 
-  export function getIn<T extends object>(obj: T, ...keyPath: string[]): T;
+  export function getIn<T>(obj: T, ...keyPath: KeyPath): unknown;
+  export function setIn<T>(obj: T, ...keyPath: KeyPathAndValue): T;
+  export function updateIn<T>(obj: T, ...keyPath: KeyPathAndUpdater): T;
+  export function deleteIn<T>(obj: T, ...keyPath: KeyPathNonEmpty): T;
 
-  export function setIn<T extends object, U extends T>(obj: T, ...keyPath: string[]): U;
+  export function produce<T>(mutation: Mutation, record?: Recorder): Reducer<T>
 
-  export function updateIn<T extends object, U extends T>(obj: T, ...keyPath: string[]): U;
+  export function tx<T>(baseStore: Writable<T>): Tinyx<T>;
 
-  export function deleteIn<T extends object, U extends T>(obj: T, key: string, ...path: string[]): U;
+  export function select<T>(store: Tinyx<T>, selector: (state: T) => KeyPath): Tinyx<unknown>;
 
-  export function produce<T extends object, U extends T>(mutation: (operations: Omit<Operations, 'subscribe' | 'commit'>) => object, record?: Function): (state: T) => U;
-
-  export function tx(operations: {
-    update<T extends object, U extends T>(state: T): U;
-    subscribe(state: object): void;
-  }): Pick<Operations, 'get' | 'subscribe' | 'commit'>;
-
-  export function select(operations: Pick<Operations, 'get' | 'subscribe' | 'commit'>, selector: Function): Pick<Operations, 'get' | 'subscribe' | 'commit'>;
-
-  export function derived<T>(operations: Pick<Operations, 'get' | 'subscribe'>, selector: Function, equals?: (a: T, b: T) => boolean): Pick<Operations, 'get' | 'subscribe'>;
+  export function derived<T, U>(store: ReadableWithGet<T>, selector: (state: T) => U): ReadableWithGet<U>;
 }
 
 declare module 'tinyx/middleware' {
-  export default function applyMiddleware(store: Partial<Operations>, middleware: any[]): any;
+  export default function applyMiddleware<T>(store: Tinyx<T>, middleware: Middleware<T>[]): Tinyx<T>;
 }
 
 declare module 'tinyx/middleware/logger' {
-  export default function txLogger<T extends Partial<Operations>>(operations: T): T;
+  export default function txLogger<T>(store: Tinyx<T>): Tinyx<T>;
+}
+
+declare module 'tinyx/middleware/writable_traits' {
+  export function SET<T>(value: T): Mutation;
+  export function UPDATE<T>(updater: Updater<T>): Mutation;
+
+  export default function withWritableTraits<T>(store: Tinyx<T>): Tinyx<T> & Writable<T>;
 }
 
 declare module 'tinyx/middleware/undo_redo' {
-  export function enableUndoRedo<T extends Partial<Operations>>(operations: T): T;
+  type ChangeLog = {
+    history: Changes;
+    future: Changes;
+  }
 
-  export function undoable<T extends Partial<Operations>>(action: (store: T, task: unknown) => unknown[]): (store: T, ...args: string[]) => unknown;
+  export function enableUndoRedo<T>(store: Tinyx<T>): Tinyx<T & ChangeLog>;
 
-  export function undo(store: Partial<Operations>): unknown;
+  export function undoable<T>(action: Action<T>): Action<T>;
 
-  export function redo(store: Partial<Operations>): unknown;
+  export function undo<T>(store: Tinyx<T>): Changes;
+
+  export function redo<T>(store: Tinyx<T>): Changes;
 }
