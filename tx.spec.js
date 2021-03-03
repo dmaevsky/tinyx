@@ -1,7 +1,5 @@
 import test from 'ava';
-
 import { getIn, produce, tx, select, derived } from '.';
-import { writable } from 'svelte/store';
 
 test('getIn', t => {
   t.is(getIn({ a: 5 }, 'a'), 5);
@@ -54,7 +52,7 @@ test('produce', t => {
 });
 
 test('tx store ops', t => {
-  const store = tx(writable(new Map()));
+  const store = tx(new Map());
   let test;
   const unsubscribe = store.subscribe(m => test = m.get('test'));
 
@@ -79,10 +77,10 @@ test('tx store ops', t => {
 });
 
 test('a store with Sets and Maps', t => {
-  const store = tx(writable({
+  const store = tx({
     a_map: new Map(),
     a_set: new Set()
-  }));
+  });
 
   // Transactions
   function TEST_SET(value) { return ({ set, update }) => set('a_map', 'key' + value, value) && update('a_set', s => new Set(s).add(value)) }
@@ -101,7 +99,7 @@ test('a store with Sets and Maps', t => {
 });
 
 test('multiple subscribers', t => {
-  const store = tx(writable(new Map()));
+  const store = tx(new Map());
   let test1, test2;
 
   const subscriptions = [
@@ -123,7 +121,7 @@ test('multiple subscribers', t => {
 })
 
 test('selected stores', t => {
-  const store = tx(writable({ foo: 'fooVal', bar: 'barVal' }));
+  const store = tx({ foo: 'fooVal', bar: 'barVal' });
   const active = select(store, store => [store.active]);
 
   let $store, $active;
@@ -155,7 +153,7 @@ test('selected stores', t => {
 });
 
 test('enforced immutability of the state', t => {
-  const store = tx(writable({ foo: new Map([['a', 1]]) }));
+  const store = tx({ foo: new Map([['a', 1]]) });
   const foo = select(store, () => ['foo']);
 
   t.throws(() => foo.update(map => map.set('a', 2)), { instanceOf: TypeError }, 'Object is frozen');
@@ -165,7 +163,7 @@ test('objects which are not Object, Map, or Set are not frozen', t => {
   class C {
     set(value) { this.value = value;  return this; }
   };
-  const store = tx(writable({ foo: new C() }));
+  const store = tx({ foo: new C() });
   const foo = select(store, () => ['foo']);
 
   function MUTATE_C() {
@@ -177,7 +175,7 @@ test('objects which are not Object, Map, or Set are not frozen', t => {
 });
 
 test('derived', t => {
-  const store = tx(writable({ activeIdx: 1, docs: ['foo', 'bar', 'baz'] }));
+  const store = tx({ activeIdx: 1, docs: ['foo', 'bar', 'baz'] });
   const active = derived(store, ({ activeIdx, docs }) => docs[activeIdx], (a, b) => a && b && a.toUpperCase() === b.toUpperCase());
 
   function SET_VALUE(value) {
@@ -185,12 +183,16 @@ test('derived', t => {
   }
 
   const updates = [];
+  t.is(active.get(), 'bar');
+
   active.subscribe(value => updates.push(value));
 
   t.is(active.get(), 'bar');
 
   store.commit(SET_VALUE, 'BAR', 'docs', 1);
-  t.is(active.get(), 'BAR');
+
+  // Even if the actual value has changed, the derived store is case-insensitive
+  t.is(active.get(), 'bar');
 
   store.commit(SET_VALUE, 2, 'activeIdx');
   t.is(active.get(), 'baz');

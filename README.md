@@ -23,15 +23,13 @@ tinyX attempts to have the best of both worlds without over-engineering things
 
 ## Example
 ```js
-import { writable } from 'svelte/store';
 import { tx } from 'tinyx';
 import logger from 'tinyx/middleware/logger';
 
 const store =
   logger(
-  tx(
-  writable({ todos: [] })
-));
+    tx({ todos: [] })
+  );
 
 // Transaction
 function ADD_TODO(task) {
@@ -44,28 +42,11 @@ store.commit(ADD_TODO, 'Start using tinyX');
 ```
 
 ## Design concepts
-tinyX builds upon the concept of a store as a simple contract, as it is popularized in SvelteJS, but it does not have any direct dependencies on Svelte.
-
-From Svelte API docs:
-> A store is simply an object with a `subscribe` method that allows interested parties to be notified whenever the store value changes.
-> A writable store has `set` and `update` methods in addition to `subscribe`.
-
-Thus, in Svelte applications it would be natural to use [`svelte/store/writable`](https://svelte.dev/docs) as the base for the single store root.
-
-```js
-import { writable } from 'svelte/store';
-import { tx } from 'tinyx';
-
-const store = tx(writable({ todos: [] }));
-```
-
-You can create your own stores without relying on `svelte/store`, by implementing the writable store contract:
-```js
-store = { subscribe: (subscription: (value: any) => void) => () => void, set: (value: any) => void }
-```
+tinyX builds upon the concept of a store as a simple contract:
+> A store is simply an object with `get` and `subscribe` methods that allow interested parties to read the store value and be notified whenever it changes.
 
 Like in Redux, the store represents the root of your unique state tree. Again, like in Redux, the whole tree is immutably replaced upon every change by a reducer.
-tinyX just provides an expressive and intuitive way to build the reducers from elementary operations i.e. `{ set, update, remove }`
+tinyX just provides an expressive and intuitive way to build the reducers from elementary operations.
 
 You can put anything into your store: functions, promises, whatever you please, it is *your* store ! It is never *augmented* with proxies or tampered with in any way.
 
@@ -112,22 +93,22 @@ This could serve as a reference to everything that can happen to your applicatio
 It is also a good practice to declare transactions with the `function` keyword, so that middleware (e.g. a logger) could have access to the function name.
 
 ## Middleware
-With *tinyX* there is no *middleware* in the classical sense: you don't need a special semantic concept for this. The store is a simple contract with only three methods in the interface: `Store = { subscribe, get, commit }`, so if you want your transactions to travel through extra layers of processing (i.e. logging) you simply implement a transformer, e.g. `logger = (store: Store) -> Store` and commit your transactions into transformed store.
+With *tinyX* there is no *middleware* in the classical sense: you don't need a special semantic concept for this. The store is a simple contract with only three methods in the interface: `Tinyx = { subscribe, get, commit }`, so if you want your transactions to travel through extra layers of processing (i.e. logging) you simply implement a transformer, e.g. `logger: (store: Tinyx) => Tinyx` and commit your transactions into transformed store.
 ```js
 import { tx } from 'tinyx';
 import logger from 'tinyx/middleware/logger';
 
-const store = logger(tx(writable(initialState)));
+const store = logger(tx(initialState));
 store.commit(ADD_TODO, task);   // will get logged to console
 ```
 You can `import applyMiddleware from 'tinyx/middleware'` to add syntactic sugar for this:
 ```js
-const store = applyMiddleware(tx(writable(initialState)), [...middleware]);
+const store = applyMiddleware(tx(initialState), [...middleware]);
 ```
 **Note** Check out a logger and a generic undo/redo examples in the `middleware` folder.
 
 ### Using as a Svelte store
-Out of the box `tinyx` is compliant to the Svelte `Readable` store contract, and thus can be directly referenced as `$store` in Svelte components.
+Out of the box `tinyX` is compliant to the Svelte `Readable` store contract, and thus can be directly referenced as `$store` in Svelte components.
 You can also augment it with Svelte `Writable` contract traits `set` and `update` using `tinyx/middleware/writable-traits` which work by committing predefined mutations `SET(value)` and `UPDATE(updater)` using the store's `commit` function.
 
 ## Actions
@@ -137,13 +118,12 @@ For instance, the `undo_redo` middleware exports two such generic actions, namel
 Example:
 
 ```js
-import { writable } from 'svelte/store';
 import { tx } from 'tinyx';
 import applyMiddleware from 'tinyx/middleware';
 import { undo, redo, undoable, enableUndoRedo } from 'tinyx/middleware/undo_redo';
 import logger from 'tinyx/middleware/logger';
 
-const store = applyMiddleware(tx(writable({ todos: [] })), [enableUndoRedo, logger]);
+const store = applyMiddleware(tx({ todos: [] }), [enableUndoRedo, logger]);
 
 // Export a new action
 export const addTodo = undoable((store, task) => store.commit(ADD_TODO, task));
@@ -160,26 +140,26 @@ For `select` `selector = state => keyPath`, e.g.
 ```js
 import { tx, select } from 'tinyx';
 
-const store = tx(writable({
+const store = tx({
   documents: new Map(),
   activeDocumentId: null
-}));
+});
 
 const activeDocument = select(store, ({ activeDocumentId }) => ['documents', activeDocumentId]);
 ```
 
 `activeDocument` will have the same API as the root store, you can commit transactions to it, and they will travel through all the middleware attached to the root store.
 
-You can also wrap selected sub-stores in extra *middleware*, so that only transactions committed directly into it would go through the extra layer. This functional approach gives incredible flexibility to mix and match middleware and sub-trees. In a sense, `select` itself may be called a *middleware*: it is just a store transformer preserving the `Store` contract.
+You can also wrap selected sub-stores in extra *middleware*, so that only transactions committed directly into it would go through the extra layer. This functional approach gives incredible flexibility to mix and match middleware and sub-trees. In a sense, `select` itself may be called a *middleware*: it is just a store transformer preserving the `Tinyx` contract.
 
 For `derived` `selector = state => derivedState`, e.g.
 ```js
 import { tx, derived } from 'tinyx';
 
-const store = tx(writable({
+const store = tx({
   documents: new Map(),
   activeDocumentId: null
-}));
+});
 
 const activeDocument = derived(store, ({ documents, activeDocumentId }) => documents.get(activeDocumentId));
 ```

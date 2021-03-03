@@ -1,5 +1,4 @@
 import test from 'ava';
-import { writable } from 'svelte/store';
 import { tx } from '../tx';
 import applyMiddleware from '.';
 import writableTraits from './writable_traits';
@@ -15,7 +14,7 @@ const logger = log => ({ commit, ...rest }) => ({
 
 test('writable traits', t => {
   const log = [];
-  const store = applyMiddleware(tx(writable(null)), [writableTraits, logger(log)]);
+  const store = applyMiddleware(tx(null), [writableTraits, logger(log)]);
 
   store.set([55]);
   store.update(list => list.concat(42));
