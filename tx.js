@@ -78,49 +78,79 @@ export const produce = (mutation, record) => state => {
   return state;
 }
 
-export const tx = ({ update, subscribe }) => {
-  update(state => deepFreeze(state));
-  let state;
-  subscribe(s => state = s);
+export const writable = (value, equals = (a, b) => a === b) => {
+  const subscribers = new Set();
+
+  const subscribe = subscriber => {
+    subscribers.add(subscriber);
+    subscriber(value);
+    return () => subscribers.delete(subscriber);
+  };
+
+  const set = newValue => {
+    if (equals(newValue, value)) return;
+    value = newValue;
+    for (let subscriber of subscribers) subscriber(value);
+  };
 
   return {
     subscribe,
-    get: (...keyPath) => getIn(state, ...keyPath),
+    set,
+    get: () => value,
+    update: updater => set(updater(value))
+  };
+}
+
+export const tx = initialState => {
+  const { subscribe, get, update } = writable(deepFreeze(initialState));
+
+  return {
+    subscribe,
+    get: (...keyPath) => getIn(get(), ...keyPath),
     commit: (transaction, payload, ...keyPath) => {
       let changes = [];
-      update(s => updateIn(s, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
+      update(state => updateIn(state, ...keyPath, produce(transaction(payload), prepend(r => changes.push(r), keyPath))));
       return changes;
     }
   };
 }
 
-export const select = ({ subscribe, get, commit }, selector) => {
+export const derived = ({ subscribe, get }, selector, equals = (a, b) => a === b) => {
+  const derivedStore = writable(undefined, equals);
+  const compute = state => derivedStore.set(selector(state));
+
+  let subscriberCount = 0;
+  let stop;
+
   return {
     subscribe: subscriber => {
-      let selected;
-      return subscribe(state => {
-        const nowSelected = getIn(state, ...selector(state));
-        if (nowSelected !== selected) subscriber(selected = nowSelected);
-      });
+      if (0 === subscriberCount++) {
+        stop = subscribe(compute);
+      }
+
+      const unsubscribe = derivedStore.subscribe(subscriber);
+
+      return () => {
+        unsubscribe();
+        if (--subscriberCount === 0) stop();
+      }
     },
-    get: (...keyPath) => get(...selector(get()), ...keyPath),
+    get: (...keyPath) => {
+      if (subscriberCount === 0) compute(get());
+      return getIn(derivedStore.get(), ...keyPath);
+    }
+  };
+}
+
+export const select = ({ subscribe, get, commit }, selector) => {
+  const derivedStore = derived({ subscribe, get }, state => get(...selector(state)));
+
+  return {
+    ...derivedStore,
     commit: (transaction, payload, ...keyPath) => {
       const root = selector(get());
       return commit(transaction, payload, ...root, ...keyPath)
         .map(({ path, ...rest }) => ({ path: path.slice(root.length), ...rest }));
     }
-  };
-}
-
-export const derived = ({ subscribe, get }, selector, equals = (a, b) => a === b) => {
-  return {
-    subscribe: subscriber => {
-      let selected;
-      return subscribe(state => {
-        const nowSelected = selector(state);
-        if (!equals(nowSelected, selected)) subscriber(selected = nowSelected);
-      });
-    },
-    get: (...keyPath) => getIn(selector(get()), ...keyPath)
   };
 }

@@ -1,14 +1,12 @@
 import test from 'ava';
-import { writable } from 'svelte/store';
 import { tx } from '../../tx';
 import { enableUndoRedo, undoable, undo, redo } from '.';
 
 test('undo/redo', t => {
   const store =
     enableUndoRedo(
-    tx(
-    writable({ todos: [] })
-  ));
+      tx({ todos: [] })
+    );
 
   // Transaction
   function ADD_TODO(task) {

@@ -3,10 +3,11 @@ type Unsubscriber = () => void;
 type Updater<T> = (value: T) => T;
 
 interface Readable<T> {
-	subscribe(subscriber: Subscriber<T>): Unsubscriber;
+  subscribe(subscriber: Subscriber<T>): Unsubscriber;
+  get(): T;
 }
 
-interface ReadableWithGet<T> extends Readable<T> {
+interface DeepReadable<T> extends Readable<T> {
   get(...keyPath: KeyPath): unknown;
 }
 
@@ -45,7 +46,7 @@ type Changes = Diff<any>[];
 
 type Transaction = (payload: unknown) => Mutation;
 
-interface Tinyx<T> extends ReadableWithGet<T> {
+interface Tinyx<T> extends DeepReadable<T> {
   commit(transaction: Transaction, payload: unknown, ...keyPath: KeyPath): Changes;
 }
 
@@ -53,21 +54,25 @@ type Middleware<T, U = T> = (store: Tinyx<T>) => Tinyx<U>;
 
 type Action<T> = (store: Tinyx<T>, ...args: unknown[]) => unknown;
 
+type EqualsPredicate<T> = (a: T, b: T) => boolean;
+
 declare module 'tinyx' {
   export function deepFreeze<T>(obj: T): Readonly<T>;
 
   export function getIn<T>(obj: T, ...keyPath: KeyPath): unknown;
-  export function setIn<T>(obj: T, ...keyPath: KeyPathAndValue): T;
-  export function updateIn<T>(obj: T, ...keyPath: KeyPathAndUpdater): T;
-  export function deleteIn<T>(obj: T, ...keyPath: KeyPathNonEmpty): T;
+  export function setIn<T>(obj: T, ...keyPath: KeyPathAndValue): Readonly<T>;
+  export function updateIn<T>(obj: T, ...keyPath: KeyPathAndUpdater): Readonly<T>;
+  export function deleteIn<T>(obj: T, ...keyPath: KeyPathNonEmpty): Readonly<T>;
 
   export function produce<T>(mutation: Mutation, record?: Recorder): Reducer<T>
 
-  export function tx<T>(baseStore: Writable<T>): Tinyx<T>;
+  export function writable<T>(initialState: T, equals?: EqualsPredicate<T>): Writable<T>;
+
+  export function tx<T>(initialState: T): Tinyx<Readonly<T>>;
 
   export function select<T>(store: Tinyx<T>, selector: (state: T) => KeyPath): Tinyx<unknown>;
 
-  export function derived<T, U>(store: ReadableWithGet<T>, selector: (state: T) => U): ReadableWithGet<U>;
+  export function derived<T, U>(store: Readable<T>, selector: (state: T) => U, equals?: EqualsPredicate<U>): DeepReadable<U>;
 }
 
 declare module 'tinyx/middleware' {
