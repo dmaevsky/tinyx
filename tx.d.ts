@@ -80,7 +80,7 @@ declare module 'tinyx/middleware' {
 }
 
 declare module 'tinyx/middleware/logger' {
-  export default function txLogger<T>(store: Tinyx<T>): Tinyx<T>;
+  export function logger<T>(print?: (...args: any[]) => void): Middleware<T>;
 }
 
 declare module 'tinyx/middleware/writable_traits' {
