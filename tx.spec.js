@@ -1,5 +1,5 @@
 import test from 'ava';
-import { getIn, produce, tx, select, derived } from '.';
+import { getIn, produce, tx, select, derived, writable } from '.';
 
 test('getIn', t => {
   t.is(getIn({ a: 5 }, 'a'), 5);
@@ -198,4 +198,12 @@ test('derived', t => {
   t.is(active.get(), 'baz');
 
   t.deepEqual(updates, ['bar', 'baz']);
+});
+
+test('writable.set returns false if nothing changed', t => {
+  const w = writable(1);
+  t.false(w.set(1));
+  t.true(w.set(2));
+  t.false(w.update(s => s));
+  t.true(w.update(s => s + 1));
 });

@@ -12,8 +12,8 @@ interface DeepReadable<T> extends Readable<T> {
 }
 
 interface Writable<T> extends Readable<T> {
-	set(value: T): void;
-	update(updater: Updater<T>): void;
+	set(value: T): boolean;
+	update(updater: Updater<T>): boolean;
 }
 
 type KeyPath = unknown[];

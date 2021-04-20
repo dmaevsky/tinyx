@@ -7,8 +7,8 @@ export function UPDATE(updater) {
 }
 
 export default ({ commit, ...rest }) => ({
-  set: value => commit(SET, value),
-  update: updater => commit(UPDATE, updater),
+  set: value => Boolean(commit(SET, value).length),
+  update: updater => Boolean(commit(UPDATE, updater).length),
   commit,
   ...rest
 });

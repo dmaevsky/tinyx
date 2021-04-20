@@ -51,15 +51,17 @@ export const produce = (mutation, record) => state => {
   const ops = {
     get: (...path) => getIn(state, ...path),
     set: (...path) => {
-      let newValue = path.pop();
+      const oldValue = getIn(state, ...path);
+      const newValue = path.pop();
+      if (newValue === oldValue) return state;
 
-      if (record) record({ path, oldValue: getIn(state, ...path), newValue });
+      if (record) record({ path, oldValue, newValue });
       return state = setIn(state, ...path, newValue);
     },
     update: (...path) => {
-      let updater = path.pop();
-      let oldValue = getIn(state, ...path);
-      let newValue = updater(oldValue);
+      const updater = path.pop();
+      const oldValue = getIn(state, ...path);
+      const newValue = updater(oldValue);
       if (newValue === oldValue) return state;
 
       if (record) record({ path, oldValue, newValue });
@@ -88,9 +90,10 @@ export const writable = (value, equals = (a, b) => a === b) => {
   };
 
   const set = newValue => {
-    if (equals(newValue, value)) return;
+    if (equals(newValue, value)) return false;
     value = newValue;
     for (let subscriber of subscribers) subscriber(value);
+    return true;
   };
 
   return {
