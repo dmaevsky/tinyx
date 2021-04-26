@@ -51,8 +51,8 @@ export const produce = (mutation, record) => state => {
   const ops = {
     get: (...path) => getIn(state, ...path),
     set: (...path) => {
-      const oldValue = getIn(state, ...path);
       const newValue = path.pop();
+      const oldValue = getIn(state, ...path);
       if (newValue === oldValue) return state;
 
       if (record) record({ path, oldValue, newValue });

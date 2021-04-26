@@ -207,3 +207,19 @@ test('writable.set returns false if nothing changed', t => {
   t.false(w.update(s => s));
   t.true(w.update(s => s + 1));
 });
+
+test.only('set and update produce no change if values remain the same', t => {
+  const store = tx({ a: 5, b: 6 });
+
+  function SET_AND_UPDATE({ a, update_b }) {
+    return ({ set, update }) => {
+      set('a', a);
+      update('b', update_b);
+    }
+  }
+
+  t.is(store.commit(SET_AND_UPDATE, { a: 5, update_b: b => b }).length, 0);
+  t.is(store.commit(SET_AND_UPDATE, { a: 6, update_b: b => b }).length, 1);
+  t.is(store.commit(SET_AND_UPDATE, { a: 6, update_b: b => b + 1 }).length, 1);
+  t.is(store.commit(SET_AND_UPDATE, { a: 7, update_b: b => b + 1 }).length, 2);
+});
