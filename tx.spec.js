@@ -208,7 +208,7 @@ test('writable.set returns false if nothing changed', t => {
   t.true(w.update(s => s + 1));
 });
 
-test.only('set and update produce no change if values remain the same', t => {
+test('set and update produce no change if values remain the same', t => {
   const store = tx({ a: 5, b: 6 });
 
   function SET_AND_UPDATE({ a, update_b }) {
