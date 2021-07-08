@@ -3,7 +3,7 @@ import {
   UNDOABLE_ACTION_END,
   UNDO,
   REDO
-} from './mutations';
+} from './mutations.js';
 
 export const enableUndoRedo = ({ commit, ...rest }) => {
   let recording = null;
