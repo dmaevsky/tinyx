@@ -1,15 +1,10 @@
 {
   "type": "module",
   "scripts": {
-    "test": "ava -v"
+    "test": "find tests -type f -name '*.spec.js' -exec echo \\# utap-src:{} \\; -exec node {} \\; | utap"
   },
   "devDependencies": {
-    "ava": "^3.15.0"
-  },
-  "ava": {
-    "files": [
-      "**/*.spec.js"
-    ]
+    "utap": "^0.1.2"
   },
   "name": "tinyx",
   "description": "Tiny state manager",

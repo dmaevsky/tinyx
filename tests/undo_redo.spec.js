@@ -1,8 +1,10 @@
-import test from 'ava';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
 import { tx } from '../tx.js';
 import { enableUndoRedo, undoable, undo, redo } from '../middleware/undo_redo/index.js';
 
-test('undo/redo', t => {
+test('undo/redo', () => {
   const store =
     enableUndoRedo(
       tx({ todos: [] })
@@ -18,7 +20,7 @@ test('undo/redo', t => {
 
   addTodo(store, 'Start using tinyX');
 
-  t.deepEqual(store.get(), {
+  assert.deepEqual(store.get(), {
     todos: [{ task: 'Start using tinyX' }],
     history: [[{ path: ['todos'], newValue: [{ task: 'Start using tinyX' }], oldValue: [] }]],
     future: [],
@@ -26,7 +28,7 @@ test('undo/redo', t => {
 
   undo(store);
 
-  t.deepEqual(store.get(), {
+  assert.deepEqual(store.get(), {
     todos: [],
     history: [],
     future: [[{ path: ['todos'], newValue: [{ task: 'Start using tinyX' }], oldValue: [] }]],
@@ -34,7 +36,7 @@ test('undo/redo', t => {
 
   redo(store);
 
-  t.deepEqual(store.get(), {
+  assert.deepEqual(store.get(), {
     todos: [{ task: 'Start using tinyX' }],
     history: [[{ path: ['todos'], newValue: [{ task: 'Start using tinyX' }], oldValue: [] }]],
     future: [],
