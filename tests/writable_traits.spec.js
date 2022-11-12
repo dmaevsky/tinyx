@@ -1,7 +1,7 @@
 import test from 'ava';
 import { tx } from '../tx.js';
-import applyMiddleware from './index.js';
-import writableTraits from './writable_traits.js';
+import applyMiddleware from '../middleware/index.js';
+import writableTraits from '../middleware/writable_traits.js';
 
 const logger = log => ({ commit, ...rest }) => ({
   commit: (transaction, payload, ...keyPath) => {

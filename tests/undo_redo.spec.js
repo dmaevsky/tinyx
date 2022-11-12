@@ -1,6 +1,6 @@
 import test from 'ava';
-import { tx } from '../../tx.js';
-import { enableUndoRedo, undoable, undo, redo } from './index.js';
+import { tx } from '../tx.js';
+import { enableUndoRedo, undoable, undo, redo } from '../middleware/undo_redo/index.js';
 
 test('undo/redo', t => {
   const store =

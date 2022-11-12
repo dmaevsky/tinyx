@@ -1,5 +1,5 @@
 import test from 'ava';
-import { getIn, produce, tx, select, derived, writable } from './tx.js';
+import { getIn, produce, tx, select, derived, writable } from '../tx.js';
 
 test('getIn', t => {
   t.is(getIn({ a: 5 }, 'a'), 5);
